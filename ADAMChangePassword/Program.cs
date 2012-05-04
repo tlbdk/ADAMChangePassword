@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.DirectoryServices;
-using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.Protocols;
 using System.Net;
 
@@ -35,7 +32,7 @@ namespace ADAMChangePassword
             String oldPassword = args[2];
             String newPassword = args[3];
             bool dryRun = false;
-            if(args.Count() == 5) {
+            if(args.Length == 5) {
             	bool.TryParse(args[4], out dryRun);
             }
             
