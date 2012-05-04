@@ -23,21 +23,38 @@ namespace ADAMChangePassword
                Change the 13th character (counting from left) to a 1. The value should be similar to 0000000001001 in the String Attribute Editor. Click OK.
             */
             // http://erlend.oftedal.no/blog/?blogid=7 Setup ADAM SSL
-
-            String connection = "LDAP://192.168.250.35:50000/CN=Users,CN=external,CN=test,DC=apmoller,DC=net";
-            //String connection = "LDAPS://192.168.250.35:50636/CN=Users,CN=external,CN=test,DC=apmoller,DC=net";
-            String user = "test";
-            String oldPassword = "test";
-            String newPassword = "test";
-
-            bool status = setPassword(connection, user, oldPassword, newPassword);
-
-            Console.WriteLine("Change password for user {0}: {1}", user, status);
-            Console.ReadKey();
-            // Do a simple LDAP connect and bind
+            // Password policy: http://www.thegeekispeak.com/archives/134
+            
+            if(args.Length != 4 && args.Length != 5) {
+            	Console.WriteLine("./ADAMChangePassword LDAP://1.2.3.4:398/CN=Users,DC=example,DC=domain user oldpassword newpassword");
+            	Environment.Exit(255);
+            }
+            
+            String connection = args[0];
+            String user = args[1];
+            String oldPassword = args[2];
+            String newPassword = args[3];
+            bool dryRun = false;
+            if(args.Count() == 5) {
+            	bool.TryParse(args[4], out dryRun);
+            }
+            
+            bool status;
+            
+            status = setPassword(connection, user, oldPassword, newPassword, true);
+            Console.WriteLine("Change password for user {0} on {1}: {2}", connection, user, status);
+            if(status) {
+            	Environment.Exit(0);
+            } else {
+            	Environment.Exit(1);
+            }
         }
 
-        static bool setPassword(string url, string user, string oldPassword, string newPassword)
+        static bool setPassword(string url, string user, string oldPassword, string newPassword) {
+        	return setPassword(url, user, oldPassword, newPassword, false);
+        }
+        
+        static bool setPassword(string url, string user, string oldPassword, string newPassword, bool dryRun)
         {
             var adamUri = new Uri(url);
             var userDN = "CN=" + user + "," + adamUri.LocalPath.Substring(1);
@@ -79,6 +96,7 @@ namespace ADAMChangePassword
                 }
             }
 
+            // Create change password request
             DirectoryAttributeModification deleteMod = new DirectoryAttributeModification();
             deleteMod.Name = "unicodePwd";
             deleteMod.Add(Encoding.Unicode.GetBytes("\"" + oldPassword + "\""));
@@ -91,8 +109,12 @@ namespace ADAMChangePassword
 
             try
             {
-                DirectoryResponse response = connection.SendRequest(request);
-                return response.ResultCode == 0;
+            	if(!dryRun) {
+            		DirectoryResponse response = connection.SendRequest(request);
+               		return response.ResultCode == 0;
+            	} else {
+            		return true;
+            	}
             }
             catch(Exception ex)
             {
