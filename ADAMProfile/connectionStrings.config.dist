@@ -1,3 +1,5 @@
 ﻿<connectionStrings>
-	<add name="ADAM" connectionString="LDAP://1.2.3.4:1234/CN=Users,CN=external,CN=test,DC=example,DC=com"/>
+  <add name="ADAMTest" connectionString="LDAP://1.2.3.4:1234/CN=Users,CN=external,CN=test,DC=example,DC=com"/>
+  <add name="ADAMPreprod" connectionString="LDAP://1.2.3.5:1234/CN=Users,CN=external,CN=preprod,DC=example,DC=com"/>
+  <add name="ADAM" connectionString="LDAP://1.2.3.6:1234/CN=Users,CN=external,CN=prod,DC=example,DC=com"/>
 </connectionStrings>

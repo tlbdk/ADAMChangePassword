@@ -18,15 +18,20 @@ namespace ADAMProfile.Controllers
 
         public ActionResult Index()
         {
-            return View();
+            return RedirectToAction("ChangePassword", "Account");
         }
 
         //
         // GET: /Account/ChangePassword
 
-        public ActionResult ChangePassword()
+        public ActionResult ChangePassword(string environment)
         {
-            return View();
+            environment = environment != null ? environment : "";
+            var model = new ChangePasswordModel()
+            {
+                Environment = environment
+            };
+            return View(model);
         }
 
         //
@@ -36,27 +41,28 @@ namespace ADAMProfile.Controllers
         public ActionResult ChangePassword(ChangePasswordModel model)
         {
             var ADAMUrl = WebConfigurationManager.ConnectionStrings["ADAM"].ConnectionString;
+            // Change environments by appending evironment name to the variable name, fx ADAMTest
+            if (!String.IsNullOrEmpty(model.Environment) && WebConfigurationManager.ConnectionStrings["ADAM" + model.Environment] != null)
+            {
+                ADAMUrl = WebConfigurationManager.ConnectionStrings["ADAM" + model.Environment].ConnectionString;
+            }
             if (ModelState.IsValid)
             {
-                // ChangePassword will throw an exception rather
-                // than return false in certain failure scenarios.
-                bool changePasswordSucceeded;
                 try
                 {
-                    changePasswordSucceeded = setPassword(ADAMUrl, model.UserName, model.OldPassword, model.NewPassword);
+                    if (setPassword(ADAMUrl, model.UserName, model.OldPassword, model.NewPassword))
+                    {
+                        return RedirectToAction("ChangePasswordSuccess");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "The current password is incorrect");
+                    }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    changePasswordSucceeded = false;
-                }
-
-                if (changePasswordSucceeded)
-                {
-                    return RedirectToAction("ChangePasswordSuccess");
-                }
-                else
-                {
-                    ModelState.AddModelError("", "The current password is incorrect");
+                    ModelState.AddModelError("", ex.Message);
+                    ModelState.AddModelError("", "URL:" + ADAMUrl);
                 }
             }
 

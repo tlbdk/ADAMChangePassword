@@ -12,6 +12,10 @@ namespace ADAMProfile.Models
         [Required]
         [Display(Name = "User Name")]
         public string UserName { get; set; }
+
+        [Display(Name = "Environment")]
+        [HiddenInput(DisplayValue = false)]
+        public string Environment { get; set; }
         
         [Required]
         [DataType(DataType.Password)]
