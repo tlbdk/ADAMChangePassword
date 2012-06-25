@@ -105,7 +105,7 @@ namespace ADAMChangePassword
                 // Invalid credentials
                 if (ex.ErrorCode == 49)
                 {
-                    return null;
+                    throw new Exception(String.Format("Invalid credentials: {0}, {1}", user, password));
                 }
                 else
                 {
