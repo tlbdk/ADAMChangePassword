@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.DirectoryServices.Protocols;
 using System.Net;
+using LDAPUtils;
 
 namespace ADAMChangePassword
 {
@@ -22,43 +23,48 @@ namespace ADAMChangePassword
             // http://erlend.oftedal.no/blog/?blogid=7 Setup ADAM SSL
             // Password policy: http://www.thegeekispeak.com/archives/134
             
-            if(args.Length != 4 && args.Length != 5) {
-            	Console.WriteLine("./ADAMChangePassword list|set LDAP://1.2.3.4:398/CN=Users,DC=example,DC=domain user oldpassword newpassword");
+            if(args.Length < 4) {
+                Console.WriteLine("List Users: ./ADAMChangePassword list LDAP://1.2.3.4:398/CN=adamadmin,CN=Users,DC=example,DC=domain password CN=Users,DC=example,DC=domain");
+                Console.WriteLine("Change own password: ./ADAMChangePassword set LDAP://1.2.3.4:398/CN=adamadmin,CN=Users,DC=example,DC=domain oldpassword newpassword [true|false]");
+                Console.WriteLine("Set other users password: ./ADAMChangePassword setadmin LDAP://1.2.3.4:398/CN=adamadmin,CN=Users,DC=example,DC=domain adminpassword LDAP://1.2.3.4:398/CN=test,CN=Users,DC=example,DC=domain newpassword [true|false]");
             	Environment.Exit(255);
             }
-            
             String type = args[0];
             String url = args[1];
-            String user = args[2];
-            String oldPassword = args[3];
-            String newPassword = args[4];
-            bool dryRun = false;
-            if(args.Length == 5) {
-            	bool.TryParse(args[4], out dryRun);
-            }
-            
-            var adamUri = new Uri(url);
-            var userDN = "CN=" + user + "," + adamUri.LocalPath.Substring(1);
-            var conn = LdapConnectBind(adamUri, userDN, oldPassword);
+            String password = args[2];
 
-            if (type == "list") {
+            var adamUri = new Uri(url);
+            var bindDN = adamUri.LocalPath.Substring(1);
+            var conn = LDAPAccount.LdapConnectBind(adamUri, bindDN, password);
+
+            if (type == "list")
+            {
+                
+                var searchpath = args[3];
+
                 var search = new SearchRequest
                 {
-                    DistinguishedName = adamUri.LocalPath.Substring(1),
+                    DistinguishedName = searchpath,
                     Scope = SearchScope.Subtree,
                     Filter = "(ObjectClass=User)"
                 };
                 SearchResponse results = (SearchResponse)conn.SendRequest(search);
 
-                foreach(SearchResultEntry item in results.Entries)
+                foreach (SearchResultEntry item in results.Entries)
                 {
                     Console.WriteLine(item.DistinguishedName);
                 }
             }
             else if (type == "set")
             {
-                bool status = setPassword(conn, userDN, oldPassword, newPassword, true);
-                Console.WriteLine("Change password for user {0} on {1}: {2}", adamUri, user, status);
+                var newPassword = args[3];
+                bool dryRun = false;
+                if(args.Length == 5) {
+            	    bool.TryParse(args[4], out dryRun);
+                }
+
+                bool status = LDAPAccount.ChangePassword(conn, bindDN, password, newPassword, dryRun);
+                Console.WriteLine("Change password for user {0}: {1}", adamUri, status);
                 if (status)
                 {
                     Environment.Exit(0);
@@ -68,86 +74,28 @@ namespace ADAMChangePassword
                     Environment.Exit(1);
                 }
             }
-        }
+            else if (type == "setadmin")
+            {
+                var userDN = args[3];
+                var newPassword = args[4];
 
-        static bool setPassword(LdapConnection connection, string userDN, string oldPassword, string newPassword) {
-        	return setPassword(connection, userDN, oldPassword, newPassword, false);
-        }
-
-        static LdapConnection LdapConnectBind(Uri url, string user, string password)
-        {
-            // Create connection without SSL and other security
-            LdapConnection connection = new LdapConnection(url.Host + ":" + url.Port);
-            if (url.Scheme == "ldap")
-            {
-                connection.SessionOptions.SecureSocketLayer = false;
-                connection.SessionOptions.Sealing = true;
-                connection.SessionOptions.Signing = false;
-            }
-            else if (url.Scheme == "ldaps")
-            {
-                connection.SessionOptions.SecureSocketLayer = true;
-            }
-            else
-            {
-                throw new Exception("Unknown connection type:" + url.Scheme);
-            }
-
-            // Basic bind with user and old password
-            NetworkCredential credential = new NetworkCredential(user, password);
-            connection.AuthType = AuthType.Basic;
-            try
-            {
-                connection.Bind(credential);
-            }
-            catch (LdapException ex)
-            {
-                // Invalid credentials
-                if (ex.ErrorCode == 49)
+                bool dryRun = false;
+                if (args.Length == 6)
                 {
-                    throw new Exception(String.Format("Invalid credentials: {0}, {1}", user, password));
+                    bool.TryParse(args[5], out dryRun);
+                }
+
+                bool status = LDAPAccount.SetPassword(conn, userDN, newPassword, dryRun);
+                Console.WriteLine("Change password for user {0}: {1}", adamUri, status);
+                if (status)
+                {
+                    Environment.Exit(0);
                 }
                 else
                 {
-                    throw;
+                    Environment.Exit(1);
                 }
-            }
 
-            return connection;
-        }
-
-        static bool setPassword(LdapConnection connection, string userDN, string oldPassword, string newPassword, bool dryRun)
-        {
-            // Create change password request
-            DirectoryAttributeModification deleteMod = new DirectoryAttributeModification();
-            deleteMod.Name = "unicodePwd";
-            deleteMod.Add(Encoding.Unicode.GetBytes("\"" + oldPassword + "\""));
-            deleteMod.Operation = DirectoryAttributeOperation.Delete;
-            DirectoryAttributeModification addMod = new DirectoryAttributeModification();
-            addMod.Name = "unicodePwd";
-            addMod.Add(Encoding.Unicode.GetBytes("\"" + newPassword + "\""));
-            addMod.Operation = DirectoryAttributeOperation.Add;
-            ModifyRequest request = new ModifyRequest(userDN, deleteMod, addMod);
-
-            try
-            {
-            	if(!dryRun) {
-            		DirectoryResponse response = connection.SendRequest(request);
-               		return response.ResultCode == 0;
-            	} else {
-            		return true;
-            	}
-            }
-            catch(Exception ex)
-            {
-                if (ex.Message == "The object does not exist")
-                {
-                    throw new Exception("User not allowed to change own password because of missing permission, set dsHeuristics to 0000000001001 on CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,CN=...");
-                }
-                else
-                {
-                    throw;
-                }
             }
         }
     }

@@ -1,3 +1,9 @@
 
 *.suo
 /ADAMProfile/connectionStrings.config
+/ADAMChangePassword/bin
+/ADAMChangePassword/obj
+/ADAMProfile/bin
+/ADAMProfile/obj
+/LDAPUtils/bin
+/LDAPUtils/obj

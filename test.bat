@@ -1,0 +1,3 @@
+ADAMChangePassword\bin\Debug\ADAMChangePassword.exe list LDAP://192.168.250.35:50000/CN=adamadmin,CN=Users,CN=external,CN=test,DC=apmoller,DC=net qwerty CN=Users,CN=external,CN=test,DC=apmoller,DC=net
+ADAMChangePassword\bin\Debug\ADAMChangePassword.exe setadmin LDAP://192.168.250.35:50000/CN=adamadmin,CN=Users,CN=external,CN=test,DC=apmoller,DC=net qwerty CN=test,CN=Users,CN=external,CN=test,DC=apmoller,DC=net test
+ADAMChangePassword\bin\Debug\ADAMChangePassword.exe set LDAP://192.168.250.35:50000/CN=test,CN=Users,CN=external,CN=test,DC=apmoller,DC=net test test2
