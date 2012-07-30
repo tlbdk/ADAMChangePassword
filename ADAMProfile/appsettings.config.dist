@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<appSettings>
+  <add key="TestUsers" value="Test:test:qwerty,Test:test1:qwerty,Test:test2:qwerty" />
+  <add key="AdminUsers" value="Test:adamadmin:qwerty" />
+</appSettings>

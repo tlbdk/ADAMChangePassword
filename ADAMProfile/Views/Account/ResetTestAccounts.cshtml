@@ -1,0 +1,8 @@
+﻿@{
+    ViewBag.Title = "ResetTestAccounts";
+}
+
+<h2>ResetTestAccounts</h2>
+@foreach (var user in ViewBag.Users) { 
+    <p>@user.Key : @user.Value</p>
+}

@@ -50,7 +50,7 @@ namespace LDAPUtils
             return connection;
         }
 
-        public static bool SetPassword(String url, string adminPassword, string userDN, string newPassword, bool dryRun = false)
+        public static bool SetPassword(string url, string adminPassword, string userDN, string newPassword, bool dryRun = false)
         {
             var adamUri = new Uri(url);
             var bindDN = adamUri.LocalPath.Substring(1);
