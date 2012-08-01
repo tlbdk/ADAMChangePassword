@@ -133,14 +133,14 @@ namespace ADAMProfile.Controllers
                             }
                             catch (DirectoryOperationException ex)
                             {
-                                status = ex.Response.ErrorMessage;
+                                status = ex.Response.ErrorMessage.Replace(AdminUsers[enviroment.Key][1], "<password>");
                             }
                             catch (Exception ex)
                             {
-                                status = ex.Message;
+                                status = ex.Message.Replace(AdminUsers[enviroment.Key][1], "<password>");
                             }
 
-                            ViewBag.Users[user.Key] = status;
+                            ViewBag.Users[enviroment.Key + " : " +  user.Key] = status;
                         }                        
                     }
                 }
